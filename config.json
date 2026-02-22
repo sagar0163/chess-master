@@ -1,0 +1,21 @@
+{
+  "ai": {
+    "enabled": true,
+    "depth": 3,
+    "think_time": 5
+  },
+  "display": {
+    "show_indicators": true,
+    "color": true,
+    "unicode": true
+  },
+  "game": {
+    "time_control": null,
+    "save_history": true,
+    "auto_save": true
+  },
+  "difficulty": {
+    "randomness": 0.1,
+    "skill_level": 10
+  }
+}
