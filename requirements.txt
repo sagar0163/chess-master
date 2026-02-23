@@ -1,1 +1,6 @@
+# Core
 chess>=1.0.0
+
+# Web GUI
+flask>=3.0.0
+flask-cors>=4.0.0
