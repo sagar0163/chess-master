@@ -179,3 +179,52 @@ class ChessBoard:
             col += dc
         
         return True
+    
+    def get_board_state(self):
+        """Get board state as 2D array for frontend"""
+        state = []
+        
+        for row in range(8):
+            row_state = []
+            for col in range(8):
+                piece = self.board[row][col]
+                if piece:
+                    row_state.append({
+                        'type': piece.__class__.__name__.lower(),
+                        'color': piece.color
+                    })
+                else:
+                    row_state.append(None)
+            state.append(row_state)
+        return state
+    
+    def to_fen(self):
+        """Convert board to FEN notation"""
+        fen_rows = []
+        
+        for row in range(8):
+            empty_count = 0
+            fen_row = ""
+            for col in range(8):
+                piece = self.board[row][col]
+                if piece is None:
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        fen_row += str(empty_count)
+                        empty_count = 0
+                    symbol = piece.__class__.__name__[0].upper()
+                    if piece.color == 'black':
+                        symbol = symbol.lower()
+                    else:
+                        symbol = symbol.upper()
+                    fen_row += symbol
+            
+            if empty_count > 0:
+                fen_row += str(empty_count)
+            
+            fen_rows.append(fen_row)
+        
+        turn = self.current_turn[0].upper()
+        
+        return '/'.join(fen_rows) + f' {turn} - - 0 1'

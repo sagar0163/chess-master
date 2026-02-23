@@ -17,5 +17,32 @@
   "difficulty": {
     "randomness": 0.1,
     "skill_level": 10
-  }
+  },
+  "difficulty_levels": {
+    "beginner": {
+      "depth": 2,
+      "skill_level": 2,
+      "randomness": 0.3,
+      "description": "Learning the basics"
+    },
+    "intermediate": {
+      "depth": 3,
+      "skill_level": 5,
+      "randomness": 0.15,
+      "description": "Solid club player"
+    },
+    "advanced": {
+      "depth": 4,
+      "skill_level": 8,
+      "randomness": 0.08,
+      "description": "Tournament competitor"
+    },
+    "grandmaster": {
+      "depth": 6,
+      "skill_level": 10,
+      "randomness": 0.02,
+      "description": "World-class opponent"
+    }
+  },
+  "default_difficulty": "grandmaster"
 }

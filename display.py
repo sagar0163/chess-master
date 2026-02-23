@@ -96,7 +96,7 @@ class ChessDisplay:
         print("\nRecent Moves:")
         for i, move in enumerate(history):
             piece = move['piece']
-            from_pos = self._pos_to algebraic(move['from'])
+            from_pos = self._pos_to_algebraic(move['from'])
             to_pos = self._pos_to_algebraic(move['to'])
             symbol = piece.symbol
             
@@ -146,3 +146,22 @@ class ChessDisplay:
         print(f"\n{'='*40}")
         print(f"  {color} to move")
         print(f"{'='*40}\n")
+
+
+class ChessBoardDisplay:
+    """Web-friendly board display helper"""
+    
+    def __init__(self):
+        self.files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    
+    def get_piece_unicode(self, piece):
+        """Get Unicode symbol for piece"""
+        symbols = {
+            ('king', 'white'): '♔', ('king', 'black'): '♚',
+            ('queen', 'white'): '♕', ('queen', 'black'): '♛',
+            ('rook', 'white'): '♖', ('rook', 'black'): '♜',
+            ('bishop', 'white'): '♗', ('bishop', 'black'): '♝',
+            ('knight', 'white'): '♘', ('knight', 'black'): '♞',
+            ('pawn', 'white'): '♙', ('pawn', 'black'): '♟'
+        }
+        return symbols.get((piece.__class__.__name__.lower(), piece.color), '')

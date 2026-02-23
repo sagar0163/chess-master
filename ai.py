@@ -1,19 +1,36 @@
 """
 Chess AI Engine
 ===============
-Minimax-based AI opponent
+Minimax-based AI opponent with difficulty levels
 """
 
 import random
 from pieces import King, Queen, Rook, Bishop, Knight, Pawn
+import json
+import os
 
 
 class ChessAI:
     """AI opponent using minimax algorithm"""
     
-    def __init__(self, depth=3):
+    def __init__(self, depth=3, difficulty='intermediate'):
         self.depth = depth
+        self.difficulty = difficulty
         self.nodes_evaluated = 0
+        self._load_difficulty_config()
+    
+    def _load_difficulty_config(self):
+        """Load difficulty configuration"""
+        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                diff_config = config.get('difficulty_levels', {}).get(self.difficulty, {})
+                self.skill_level = diff_config.get('skill_level', 5)
+                self.randomness = diff_config.get('randomness', 0.1)
+        except:
+            self.skill_level = 5
+            self.randomness = 0.1
     
     def get_best_move(self, board, color):
         """Get best move for AI"""
@@ -35,7 +52,16 @@ class ChessAI:
         if not all_moves:
             return None
         
-        # Minimax
+        # For Grandmaster: use full minimax with best move selection
+        # Apply randomness based on difficulty (lower = more randomness)
+        if self.randomness > 0 and random.random() < self.randomness:
+            # Introduce occasional suboptimal moves for lower difficulties
+            sorted_moves = self._get_sorted_moves(board, all_moves, color)
+            # Pick from top 3-5 moves randomly
+            top_n = min(len(sorted_moves), max(3, int(5 * (1 - self.skill_level/10))))
+            return random.choice(sorted_moves[:top_n])
+        
+        # Minimax with alpha-beta pruning
         best_move = None
         best_score = float('-inf') if color == 'black' else float('inf')
         
@@ -72,6 +98,34 @@ class ChessAI:
             board.set_piece(to_row, to_col, captured)
         
         return best_move
+    
+    def _get_sorted_moves(self, board, moves, color):
+        """Get moves sorted by evaluation for smarter random selection"""
+        move_scores = []
+        from validator import MoveValidator
+        validator = MoveValidator(board)
+        
+        for move in moves:
+            from_row, from_col = move[0]
+            to_row, to_col = move[1]
+            
+            piece = board.get_piece(from_row, from_col)
+            captured = board.get_piece(to_row, to_col)
+            
+            board.set_piece(to_row, to_col, piece)
+            board.remove_piece(from_row, from_col)
+            
+            score = self._evaluate_board(board)
+            
+            board.set_piece(from_row, from_col, piece)
+            board.set_piece(to_row, to_col, captured)
+            
+            # For black, higher score is better; for white, lower is better
+            adjusted_score = score if color == 'black' else -score
+            move_scores.append((move, adjusted_score))
+        
+        move_scores.sort(key=lambda x: x[1], reverse=(color == 'black'))
+        return [m[0] for m in move_scores]
     
     def _minimax(self, board, depth, alpha, beta, color):
         """Minimax algorithm with alpha-beta pruning"""

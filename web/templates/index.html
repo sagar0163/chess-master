@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Master - Web GUI</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1rem;
+        }
+        
+        .game-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .board-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 3px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .square.light {
+            background: #f0d9b5;
+            color: #333;
+        }
+        
+        .square.dark {
+            background: #b58863;
+            color: #333;
+        }
+        
+        .square.selected {
+            box-shadow: inset 0 0 0 3px #ffd700;
+        }
+        
+        .square.valid-move::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50%;
+        }
+        
+        .square.valid-capture {
+            background: rgba(255,0,0,0.3) !important;
+        }
+        
+        .square:hover {
+            filter: brightness(1.1);
+        }
+        
+        .piece {
+            user-select: none;
+            text-shadow: 2px 2px 2px rgba(0,0,0,0.3);
+        }
+        
+        .piece.white { color: #fff; }
+        .piece.black { color: #000; }
+        
+        .controls-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-weight: 500;
+        }
+        
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #2a2a3e;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        select:hover, button:hover {
+            border-color: #ffd700;
+        }
+        
+        button.primary {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1a2e;
+            font-weight: 700;
+            border: none;
+        }
+        
+        button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,215,0,0.3);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status.turn-white {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .status.turn-black {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .status.check {
+            background: rgba(255,0,0,0.2);
+            border: 1px solid #ff4444;
+            animation: pulse 1s infinite;
+        }
+        
+        .status.game-over {
+            background: rgba(255,215,0,0.2);
+            border: 1px solid #ffd700;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .difficulty-info {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .difficulty-info h3 {
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+        
+        .difficulty-info p {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .move-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .move-history h4 {
+            color: #888;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .move-item {
+            display: flex;
+            gap: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .move-number {
+            color: #666;
+            min-width: 30px;
+        }
+        
+        .files-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 5px 0;
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .ranks-row {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            position: absolute;
+            left: -20px;
+            top: 0;
+            height: 100%;
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .board-wrapper {
+            position: relative;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #ffd700;
+        }
+        
+        @media (max-width: 768px) {
+            .chess-board {
+                grid-template-columns: repeat(8, 40px);
+                grid-template-rows: repeat(8, 40px);
+            }
+            
+            .square {
+                width: 40px;
+                height: 40px;
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1>♟ Chess Master ♟</h1>
+                <p class="subtitle">Challenge the Grandmaster</p>
+            </header>
+            
+            <div class="game-container" v-if="gameStarted">
+                <div class="board-section">
+                    <div class="board-wrapper">
+                        <div class="chess-board">
+                            <div 
+                                v-for="(square, index) in squares" 
+                                :key="index"
+                                class="square"
+                                :class="getSquareClass(index)"
+                                @click="onSquareClick(index)"
+                            >
+                                <span v-if="square.piece" class="piece" :class="square.piece.color">
+                                    ${ getPieceSymbol(square.piece) }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls-section">
+                    <div class="status" :class="statusClass">
+                        ${ statusText }
+                    </div>
+                    
+                    <div class="difficulty-info">
+                        <h3>${ difficulty.toUpperCase() }</h3>
+                        <p>${ difficultyDescription }</p>
+                    </div>
+                    
+                    <div class="control-group">
+                        <button @click="resetGame" class="primary">
+                            New Game
+                        </button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Difficulty</label>
+                        <select v-model="selectedDifficulty" @change="changeDifficulty">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="grandmaster">Grandmaster</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Play as</label>
+                        <select v-model="playerColor" @change="changeColor">
+                            <option value="white">White</option>
+                            <option value="black">Black</option>
+                        </select>
+                    </div>
+                    
+                    <div class="move-history" v-if="moveHistory.length > 0">
+                        <h4>Move History</h4>
+                        <div class="move-item" v-for="(move, i) in moveHistory" :key="i">
+                            <span class="move-number">${ Math.floor(i/2) + 1 }.</span>
+                            <span>${ formatMove(move) }</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div v-else class="controls-section" style="max-width: 400px; margin: 0 auto;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Start a New Game</h2>
+                
+                <div class="control-group">
+                    <label>Difficulty</label>
+                    <select v-model="selectedDifficulty">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="grandmaster">Grandmaster</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Play as</label>
+                    <select v-model="playerColor">
+                        <option value="white">White</option>
+                        <option value="black">Black</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <button @click="startGame" class="primary">
+                        Start Game
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+        
+        // Use $ for Vue to avoid Jinja2 conflict
+        createApp({
+            delimiters: ['${', '}'],
+            setup() {
+                const gameId = ref(null);
+                const gameStarted = ref(false);
+                const board = ref([]);
+                const currentTurn = ref('white');
+                const gameOver = ref(false);
+                const winner = ref(null);
+                const selectedSquare = ref(null);
+                const validMoves = ref([]);
+                const moveHistory = ref([]);
+                const playerColor = ref('white');
+                const selectedDifficulty = ref('grandmaster');
+                const difficulty = ref('grandmaster');
+                const isAiThinking = ref(false);
+                
+                const squares = computed(() => {
+                    const result = [];
+                    for (let row = 0; row < 8; row++) {
+                        for (let col = 0; col < 8; col++) {
+                            const piece = board.value[row]?.[col];
+                            result.push({ row, col, piece });
+                        }
+                    }
+                    return result;
+                });
+                
+                const difficultyDescriptions = {
+                    beginner: 'Learning the basics - 2 ply depth',
+                    intermediate: 'Solid club player - 3 ply depth',
+                    advanced: 'Tournament competitor - 4 ply depth',
+                    grandmaster: 'World-class opponent - 6 ply depth'
+                };
+                
+                const difficultyDescription = computed(() => 
+                    difficultyDescriptions[difficulty.value]
+                );
+                
+                const statusText = computed(() => {
+                    if (gameOver.value) {
+                        if (winner.value === 'draw') return 'Game Over - Draw!';
+                        return `Game Over - ${winner.value === playerColor.value ? 'You Win!' : 'You Lose!'}`;
+                    }
+                    if (isAiThinking.value) return 'Grandmaster is thinking...';
+                    const isMyTurn = currentTurn.value === playerColor.value;
+                    return `${isMyTurn ? 'Your' : 'Grandmaster\'s'} turn (${currentTurn.value})`;
+                });
+                
+                const statusClass = computed(() => {
+                    if (gameOver.value) return 'game-over';
+                    if (isAiThinking.value) return 'check';
+                    return currentTurn.value === 'white' ? 'turn-white' : 'turn-black';
+                });
+                
+                const getSquareClass = (index) => {
+                    const row = Math.floor(index / 8);
+                    const col = index % 8;
+                    const isLight = (row + col) % 2 === 0;
+                    
+                    let classes = isLight ? 'light' : 'dark';
+                    
+                    if (selectedSquare.value && 
+                        selectedSquare.value.row === row && 
+                        selectedSquare.value.col === col) {
+                        classes += ' selected';
+                    }
+                    
+                    if (validMoves.value.some(m => m.row === row && m.col === col)) {
+                        classes += ' valid-move';
+                        const targetSquare = board.value[row]?.[col];
+                        if (targetSquare) classes += ' valid-capture';
+                    }
+                    
+                    return classes;
+                };
+                
+                const getPieceSymbol = (piece) => {
+                    if (!piece) return '';
+                    const symbols = {
+                        king: { white: '♔', black: '♚' },
+                        queen: { white: '♕', black: '♛' },
+                        rook: { white: '♖', black: '♜' },
+                        bishop: { white: '♗', black: '♝' },
+                        knight: { white: '♘', black: '♞' },
+                        pawn: { white: '♙', black: '♟' }
+                    };
+                    return symbols[piece.type]?.[piece.color] || '';
+                };
+                
+                const startGame = async () => {
+                    try {
+                        const response = await fetch('/api/new_game', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                difficulty: selectedDifficulty.value,
+                                player_color: playerColor.value
+                            })
+                        });
+                        const data = await response.json();
+                        gameId.value = data.game_id;
+                        board.value = data.board;
+                        currentTurn.value = data.current_turn;
+                        difficulty.value = data.difficulty;
+                        playerColor.value = data.player_color;
+                        gameStarted.value = true;
+                        moveHistory.value = [];
+                        
+                        // If playing black, trigger AI move
+                        if (currentTurn.value === 'black') {
+                            setTimeout(aiMove, 500);
+                        }
+                    } catch (e) {
+                        console.error('Error starting game:', e);
+                    }
+                };
+                
+                const resetGame = () => {
+                    gameStarted.value = false;
+                    gameId.value = null;
+                    board.value = [];
+                    selectedSquare.value = null;
+                    validMoves.value = [];
+                    moveHistory.value = [];
+                };
+                
+                const changeDifficulty = () => {
+                    if (gameStarted.value) {
+                        resetGame();
+                        selectedDifficulty.value = selectedDifficulty.value;
+                    }
+                };
+                
+                const changeColor = () => {
+                    if (gameStarted.value) {
+                        resetGame();
+                    }
+                };
+                
+                const onSquareClick = async (index) => {
+                    if (isAiThinking.value || gameOver.value) return;
+                    
+                    const row = Math.floor(index / 8);
+                    const col = index % 8;
+                    const piece = board.value[row]?.[col];
+                    
+                    // If clicking on own piece, select it
+                    if (piece && piece.color === playerColor.value) {
+                        if (selectedSquare.value?.row === row && selectedSquare.value?.col === col) {
+                            selectedSquare.value = null;
+                            validMoves.value = [];
+                        } else {
+                            selectedSquare.value = { row, col };
+                            // Calculate valid moves (simplified - just allow clicking)
+                            validMoves.value = [];
+                        }
+                        return;
+                    }
+                    
+                    // If piece selected and clicking on valid move
+                    if (selectedSquare.value) {
+                        await makeMove(selectedSquare.value.row, selectedSquare.value.col, row, col);
+                    }
+                };
+                
+                const makeMove = async (fromRow, fromCol, toRow, toCol) => {
+                    try {
+                        const response = await fetch('/api/move', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                game_id: gameId.value,
+                                from: [fromRow, fromCol],
+                                to: [toRow, toCol]
+                            })
+                        });
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            console.error('Move error:', data.error);
+                            return;
+                        }
+                        
+                        board.value = data.board;
+                        currentTurn.value = data.current_turn;
+                        gameOver.value = data.game_over;
+                        winner.value = data.winner;
+                        
+                        // Add to move history
+                        moveHistory.value.push({
+                            from: [fromRow, fromCol],
+                            to: [toRow, toCol],
+                            color: playerColor.value
+                        });
+                        
+                        selectedSquare.value = null;
+                        validMoves.value = [];
+                        
+                        // Check if AI should move
+                        if (!gameOver.value && currentTurn.value !== playerColor.value) {
+                            setTimeout(aiMove, 500);
+                        }
+                    } catch (e) {
+                        console.error('Error making move:', e);
+                    }
+                };
+                
+                const aiMove = async () => {
+                    if (gameOver.value || currentTurn.value === playerColor.value) return;
+                    
+                    isAiThinking.value = true;
+                    
+                    try {
+                        const response = await fetch(`/api/ai_move/${gameId.value}`, {
+                            method: 'POST'
+                        });
+                        const data = await response.json();
+                        
+                        board.value = data.board;
+                        currentTurn.value = data.current_turn;
+                        gameOver.value = data.game_over;
+                        winner.value = data.winner;
+                        
+                        if (data.ai_move) {
+                            moveHistory.value.push({
+                                from: data.ai_move[0],
+                                to: data.ai_move[1],
+                                color: currentTurn.value === 'white' ? 'black' : 'white'
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Error AI move:', e);
+                    }
+                    
+                    isAiThinking.value = false;
+                };
+                
+                const formatMove = (move) => {
+                    const files = ['a','b','c','d','e','f','g','h'];
+                    const from = files[move.from[1]] + (8 - move.from[0]);
+                    const to = files[move.to[1]] + (8 - move.to[0]);
+                    return `${from} → ${to}`;
+                };
+                
+                return {
+                    gameStarted,
+                    board,
+                    squares,
+                    currentTurn,
+                    gameOver,
+                    winner,
+                    selectedSquare,
+                    validMoves,
+                    moveHistory,
+                    playerColor,
+                    selectedDifficulty,
+                    difficulty,
+                    difficultyDescription,
+                    statusText,
+                    statusClass,
+                    getSquareClass,
+                    getPieceSymbol,
+                    startGame,
+                    resetGame,
+                    changeDifficulty,
+                    changeColor,
+                    onSquareClick
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
